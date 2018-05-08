@@ -5,13 +5,6 @@ using FairyGUI.Utils;
 
 namespace FairyGUI
 {
-	public enum ChildrenRenderOrder
-	{
-		Ascent,
-		Descent,
-		Arch,
-	}
-
 	/// <summary>
 	/// Component
 	/// </summary>
@@ -50,6 +43,7 @@ namespace FairyGUI
 		Vector2 _clipSoftness;
 		int _sortingChildCount;
 		EventCallback0 _buildDelegate;
+		Controller _applyingController;
 
 		public GComponent()
 		{
@@ -74,11 +68,18 @@ namespace FairyGUI
 
 		override public void Dispose()
 		{
-			int transCnt = _transitions.Count;
-			for (int i = 0; i < transCnt; ++i)
+			int cnt = _transitions.Count;
+			for (int i = 0; i < cnt; ++i)
 			{
 				Transition trans = _transitions[i];
 				trans.Dispose();
+			}
+
+			cnt = _controllers.Count;
+			for (int i = 0; i < cnt; ++i)
+			{
+				Controller c = _controllers[i];
+				c.Dispose();
 			}
 
 			if (scrollPane != null)
@@ -86,8 +87,8 @@ namespace FairyGUI
 
 			base.Dispose(); //Dispose native tree first, avoid DisplayObject.RemoveFromParent call
 
-			int numChildren = _children.Count;
-			for (int i = numChildren - 1; i >= 0; --i)
+			cnt = _children.Count;
+			for (int i = cnt - 1; i >= 0; --i)
 			{
 				GObject obj = _children[i];
 				obj.InternalSetParent(null); //Avoid GObject.RemoveParent call
@@ -212,6 +213,8 @@ namespace FairyGUI
 
 					ChildStateChanged(child);
 					SetBoundsChangedFlag();
+					if (child.group != null)
+						child.group.SetBoundsChangedFlag(true);
 				}
 				return child;
 			}
@@ -291,6 +294,7 @@ namespace FairyGUI
 					_sortingChildCount--;
 
 				_children.RemoveAt(index);
+				child.group = null;
 				if (child.inContainer)
 				{
 					container.RemoveChild(child.displayObject);
@@ -305,7 +309,6 @@ namespace FairyGUI
 					child.Dispose();
 
 				SetBoundsChangedFlag();
-
 				return child;
 			}
 			else
@@ -376,7 +379,7 @@ namespace FairyGUI
 			for (int i = 0; i < cnt; ++i)
 			{
 				GObject child = _children[i];
-				if (child.finalVisible && child.name == name)
+				if (child.internalVisible && child.internalVisible2 && child.name == name)
 					return child;
 			}
 
@@ -710,7 +713,7 @@ namespace FairyGUI
 			if (child.displayObject == null)
 				return;
 
-			if (child.finalVisible)
+			if (child.internalVisible)
 			{
 				if (child.displayObject.parent == null)
 				{
@@ -781,7 +784,7 @@ namespace FairyGUI
 						for (int i = 0; i < cnt; i++)
 						{
 							GObject child = _children[i];
-							if (child.displayObject != null && child.finalVisible)
+							if (child.displayObject != null && child.internalVisible)
 								container.AddChild(child.displayObject);
 						}
 					}
@@ -791,7 +794,7 @@ namespace FairyGUI
 						for (int i = cnt - 1; i >= 0; i--)
 						{
 							GObject child = _children[i];
-							if (child.displayObject != null && child.finalVisible)
+							if (child.displayObject != null && child.internalVisible)
 								container.AddChild(child.displayObject);
 						}
 					}
@@ -802,13 +805,13 @@ namespace FairyGUI
 						for (int i = 0; i < _apexIndex; i++)
 						{
 							GObject child = _children[i];
-							if (child.displayObject != null && child.finalVisible)
+							if (child.displayObject != null && child.internalVisible)
 								container.AddChild(child.displayObject);
 						}
 						for (int i = cnt - 1; i >= _apexIndex; i--)
 						{
 							GObject child = _children[i];
-							if (child.displayObject != null && child.finalVisible)
+							if (child.displayObject != null && child.internalVisible)
 								container.AddChild(child.displayObject);
 						}
 					}
@@ -818,12 +821,16 @@ namespace FairyGUI
 
 		internal void ApplyController(Controller c)
 		{
+			_applyingController = c;
 			int cnt = _children.Count;
 			for (int i = 0; i < cnt; ++i)
 			{
 				GObject child = _children[i];
 				child.HandleControllerChanged(c);
 			}
+			_applyingController = null;
+
+			c.RunActions();
 		}
 
 		void ApplyAllControllers()
@@ -857,7 +864,11 @@ namespace FairyGUI
 				}
 			}
 			if (myIndex < maxIndex)
+			{
+				if (_applyingController != null)
+					_children[maxIndex].HandleControllerChanged(_applyingController);
 				this.SwapChildrenAt(myIndex, maxIndex);
+			}
 		}
 
 		/// <summary>
@@ -1219,6 +1230,11 @@ namespace FairyGUI
 			}
 		}
 
+		/// <summary>
+		/// 每帧调用的一个回调。如果你要override，请记住以下两点：
+		/// 1、记得调用base.onUpdate;
+		/// 2、不要在方法里进行任何会更改显示列表的操作，例如AddChild、RemoveChild、visible等。
+		/// </summary>
 		virtual protected void OnUpdate()
 		{
 			if (_boundsChanged)

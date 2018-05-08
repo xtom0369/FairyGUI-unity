@@ -266,11 +266,9 @@ namespace FairyGUI
 						child.onRemovedFromStage.Call();
 				}
 				_children.Remove(child);
+				InvalidateBatchingState(true);
 				if (!dispose)
-				{
 					child.InternalSetParent(null);
-					InvalidateBatchingState(true);
-				}
 				else
 					child.Dispose();
 
@@ -476,7 +474,7 @@ namespace FairyGUI
 			{
 				Camera cam = this.renderCamera;
 				if (cam == null)
-					cam = Camera.main;
+					cam = HitTestContext.cachedMainCamera;
 				if (cam == null)
 					cam = StageCamera.main;
 				return cam;
@@ -491,7 +489,12 @@ namespace FairyGUI
 		public DisplayObject HitTest(Vector2 stagePoint, bool forTouch)
 		{
 			if (StageCamera.main == null)
-				return null;
+			{
+				if (this is Stage)
+					return this;
+				else
+					return null;
+			}
 
 			HitTestContext.screenPoint = new Vector2(stagePoint.x, Screen.height - stagePoint.y);
 			HitTestContext.worldPoint = StageCamera.main.ScreenToWorldPoint(HitTestContext.screenPoint);
@@ -905,6 +908,9 @@ namespace FairyGUI
 
 		public override void Dispose()
 		{
+			if (_disposed)
+				return;
+
 			base.Dispose(); //Destroy GameObject tree first, avoid destroying each seperately;
 
 			int numChildren = _children.Count;

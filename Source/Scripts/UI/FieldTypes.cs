@@ -41,7 +41,8 @@ namespace FairyGUI
 		Scale,
 		ScaleMatchHeight,
 		ScaleMatchWidth,
-		ScaleFree
+		ScaleFree,
+		ScaleNoBorder
 	}
 
 	public enum AutoSizeType
@@ -149,6 +150,20 @@ namespace FairyGUI
 		ColorFilter,
 		Skew,
 		Unknown
+	}
+
+	public enum GroupLayoutType
+	{
+		None,
+		Horizontal,
+		Vertical
+	}
+
+	public enum ChildrenRenderOrder
+	{
+		Ascent,
+		Descent,
+		Arch,
 	}
 
 	class FieldTypes
@@ -267,6 +282,8 @@ namespace FairyGUI
 					return FillType.ScaleMatchWidth;
 				case "scaleFree":
 					return FillType.ScaleFree;
+				case "scaleNoBorder":
+					return FillType.ScaleNoBorder;
 				default:
 					return FillType.None;
 			}
@@ -512,6 +529,19 @@ namespace FairyGUI
 
 				default:
 					return ChildrenRenderOrder.Ascent;
+			}
+		}
+
+		public static GroupLayoutType ParseGroupLayoutType(string value)
+		{
+			switch (value)
+			{
+				case "hz":
+					return GroupLayoutType.Horizontal;
+				case "vt":
+					return GroupLayoutType.Vertical;
+				default:
+					return GroupLayoutType.None;
 			}
 		}
 	}

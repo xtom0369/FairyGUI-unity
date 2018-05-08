@@ -44,6 +44,7 @@ namespace FairyGUI
 		{
 			get
 			{
+				GetTextFieldText();
 				return _text;
 			}
 			set
@@ -51,18 +52,22 @@ namespace FairyGUI
 				if (value == null)
 					value = string.Empty;
 				_text = value;
-				UpdateTextFieldText();
+				SetTextFieldText();
 				UpdateSize();
 				UpdateGear(6);
 			}
 		}
 
-		virtual protected void UpdateTextFieldText()
+		virtual protected void SetTextFieldText()
 		{
 			if (_ubbEnabled)
 				_textField.htmlText = UBBParser.inst.Parse(XMLUtils.EncodeString(_text));
 			else
 				_textField.text = _text;
+		}
+
+		virtual protected void GetTextFieldText()
+		{
 		}
 
 		/// <summary>
@@ -93,7 +98,7 @@ namespace FairyGUI
 			}
 			set
 			{
-				if (!_textField.textFormat.color.Equals(value))
+				if (_textField.textFormat.color != value)
 				{
 					TextFormat tf = _textField.textFormat;
 					tf.color = value;
@@ -199,15 +204,6 @@ namespace FairyGUI
 						displayObject.SetSize(this.width, this.height);
 				}
 			}
-		}
-
-		/// <summary>
-		/// 设定文本是否从右向左显示（阿拉伯文字）。
-		/// </summary>
-		public bool rtl
-		{
-			get { return _textField.rtl; }
-			set { _textField.rtl = value; }
 		}
 
 		/// <summary>

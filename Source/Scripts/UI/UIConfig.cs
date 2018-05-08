@@ -12,7 +12,7 @@ namespace FairyGUI
 	{
 		/// <summary>
 		/// Dynamic Font Support. 
-		/// 4.x: Put the xxx.ttf into /Resources or /Resources/Font, and set defaultFont="xxx".
+		/// 4.x: Put the xxx.ttf into /Resources or /Resources/Fonts, and set defaultFont="xxx".
 		/// 5.x: set defaultFont to system font name(or names joint with comma). e.g. defaultFont="Microsoft YaHei, SimHei"
 		/// </summary>
 		public static string defaultFont = "";
@@ -159,9 +159,9 @@ namespace FairyGUI
 		public static float frameTimeForAsyncUIConstruction = 0.002f;
 
 		/// <summary>
-		/// 设定默认是否所有文本都从右向左显示（阿拉伯文字）。
+		/// if RenderTexture using in paiting mode has depth support.
 		/// </summary>
-		public static bool rightToLeftText = false;
+		public static bool depthSupportForPaintingMode = false;
 
 		public enum ConfigKey
 		{
@@ -337,10 +337,6 @@ namespace FairyGUI
 
 					case ConfigKey.InputHighlightColor:
 						UIConfig.inputHighlightColor = value.c;
-						break;
-
-					case ConfigKey.RightToLeftText:
-						UIConfig.rightToLeftText = value.b;
 						break;
 				}
 			}

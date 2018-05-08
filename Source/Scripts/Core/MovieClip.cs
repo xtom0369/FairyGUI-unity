@@ -208,6 +208,8 @@ namespace FairyGUI
 								else
 									_status = 1;
 							}
+							else if (_start != 0)
+								_status = 1;
 						}
 					}
 					DrawFrame();
@@ -237,7 +239,10 @@ namespace FairyGUI
 					if (_flip != FlipType.None)
 						ToolSet.FlipRect(ref uvRect, _flip);
 
-					graphics.SetOneQuadMesh(frame.rect, uvRect, _color, null, frame.rotated);
+					graphics.DrawRect(frame.rect, uvRect, _color);
+					if (frame.rotated)
+						NGraphics.RotateUV(graphics.uv, ref uvRect);
+					graphics.UpdateMesh();
 				}
 			}
 		}

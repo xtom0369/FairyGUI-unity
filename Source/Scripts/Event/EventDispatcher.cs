@@ -22,28 +22,6 @@ namespace FairyGUI
 		/// </summary>
 		/// <param name="strType"></param>
 		/// <param name="callback"></param>
-		public void AddEventListener(string strType, EventCallback0 callback)
-		{
-			if (strType == null)
-				throw new Exception("event type cant be null");
-
-			if (_dic == null)
-				_dic = new Dictionary<string, EventBridge>();
-
-			EventBridge bridge = null;
-			if (!_dic.TryGetValue(strType, out bridge))
-			{
-				bridge = new EventBridge(this);
-				_dic[strType] = bridge;
-			}
-			bridge.Add(callback);
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="strType"></param>
-		/// <param name="callback"></param>
 		public void AddEventListener(string strType, EventCallback1 callback)
 		{
 			if (strType == null)
@@ -66,7 +44,29 @@ namespace FairyGUI
 		/// </summary>
 		/// <param name="strType"></param>
 		/// <param name="callback"></param>
-		public void RemoveEventListener(string strType, EventCallback0 callback)
+		public void AddEventListener(string strType, EventCallback0 callback)
+		{
+			if (strType == null)
+				throw new Exception("event type cant be null");
+
+			if (_dic == null)
+				_dic = new Dictionary<string, EventBridge>();
+
+			EventBridge bridge = null;
+			if (!_dic.TryGetValue(strType, out bridge))
+			{
+				bridge = new EventBridge(this);
+				_dic[strType] = bridge;
+			}
+			bridge.Add(callback);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="strType"></param>
+		/// <param name="callback"></param>
+		public void RemoveEventListener(string strType, EventCallback1 callback)
 		{
 			if (_dic == null)
 				return;
@@ -81,7 +81,7 @@ namespace FairyGUI
 		/// </summary>
 		/// <param name="strType"></param>
 		/// <param name="callback"></param>
-		public void RemoveEventListener(string strType, EventCallback1 callback)
+		public void RemoveEventListener(string strType, EventCallback0 callback)
 		{
 			if (_dic == null)
 				return;
@@ -273,11 +273,11 @@ namespace FairyGUI
 			for (int i = length - 1; i >= 0; i--)
 			{
 				bubbleChain[i].CallCaptureInternal(context);
-				if (context._touchEndCapture)
+				if (context._touchCapture)
 				{
-					context._touchEndCapture = false;
+					context._touchCapture = false;
 					if (strType == "onTouchBegin")
-						Stage.inst.AddTouchEndMonitor(context.inputEvent.touchId, bubbleChain[i].owner);
+						Stage.inst.AddTouchMonitor(context.inputEvent.touchId, bubbleChain[i].owner);
 				}
 			}
 
@@ -286,15 +286,16 @@ namespace FairyGUI
 				for (int i = 0; i < length; ++i)
 				{
 					bubbleChain[i].CallInternal(context);
+
+					if (context._touchCapture)
+					{
+						context._touchCapture = false;
+						if (strType == "onTouchBegin")
+							Stage.inst.AddTouchMonitor(context.inputEvent.touchId, bubbleChain[i].owner);
+					}
+
 					if (context._stopsPropagation)
 						break;
-
-					if (context._touchEndCapture)
-					{
-						context._touchEndCapture = false;
-						if (strType == "onTouchBegin")
-							Stage.inst.AddTouchEndMonitor(context.inputEvent.touchId, bubbleChain[i].owner);
-					}
 				}
 
 				if (addChain != null)

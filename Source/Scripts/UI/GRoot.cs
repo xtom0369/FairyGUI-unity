@@ -61,7 +61,7 @@ namespace FairyGUI
 		/// </summary>
 		/// <param name="designResolutionX">Design resolution of x axis.</param>
 		/// <param name="designResolutionY">Design resolution of y axis.</param>
-		/// <param name="screenMatchMode">Math mode.</param>
+		/// <param name="screenMatchMode">Match mode.</param>
 		public void SetContentScaleFactor(int designResolutionX, int designResolutionY, UIContentScaler.ScreenMatchMode screenMatchMode)
 		{
 			UIContentScaler scaler = Stage.inst.gameObject.GetComponent<UIContentScaler>();
@@ -230,6 +230,29 @@ namespace FairyGUI
 		}
 
 		/// <summary>
+		/// 
+		/// </summary>
+		public GGraph modalLayer
+		{
+			get
+			{
+				if (_modalLayer == null)
+					CreateModalLayer();
+
+				return _modalLayer;
+			}
+		}
+
+		void CreateModalLayer()
+		{
+			_modalLayer = new GGraph();
+			_modalLayer.DrawRect(this.width, this.height, 0, Color.white, UIConfig.modalLayerColor);
+			_modalLayer.AddRelation(this, RelationType.Size);
+			_modalLayer.name = _modalLayer.gameObjectName = "ModalLayer";
+			_modalLayer.SetHome(this);
+		}
+
+		/// <summary>
 		/// Return true if a modal window is on stage.
 		/// </summary>
 		public bool hasModalWindow
@@ -279,13 +302,7 @@ namespace FairyGUI
 		private void AdjustModalLayer()
 		{
 			if (_modalLayer == null)
-			{
-				_modalLayer = new GGraph();
-				_modalLayer.DrawRect(this.width, this.height, 0, Color.white, UIConfig.modalLayerColor);
-				_modalLayer.AddRelation(this, RelationType.Size);
-				_modalLayer.gameObjectName = "ModalLayer";
-				_modalLayer.SetHome(this);
-			}
+				CreateModalLayer();
 
 			int cnt = this.numChildren;
 
@@ -334,7 +351,7 @@ namespace FairyGUI
 
 		/// <summary>
 		/// Show a popup object along with the specific target object.
-		/// 显示一个popup。将popup显示在指定对象的上边或者下边。
+		/// 显示一个popup。将popup显示在指定对象的上方或者下方。
 		/// popup的特点是点击popup对象外的区域，popup对象将自动消失。
 		/// </summary>
 		/// <param name="popup"></param>
@@ -356,6 +373,23 @@ namespace FairyGUI
 				}
 			}
 			_popupStack.Add(popup);
+
+			if (target != null)
+			{
+				GObject p = target;
+				while (p != null)
+				{
+					if (p.parent == this)
+					{
+						if (popup.sortingOrder < p.sortingOrder)
+						{
+							popup.sortingOrder = p.sortingOrder;
+						}
+						break;
+					}
+					p = p.parent;
+				}
+			}
 
 			AddChild(popup);
 			AdjustModalLayer();

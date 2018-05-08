@@ -33,11 +33,6 @@ namespace FairyGUI
 		/// </summary>
 		public bool resizable;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string url;
-
 		Dictionary<int, BMGlyph> _dict;
 		float scale;
 
@@ -45,7 +40,6 @@ namespace FairyGUI
 		{
 			this.packageItem = item;
 			this.name = UIPackage.URL_PREFIX + packageItem.owner.id + packageItem.id;
-			this.url = UIPackage.URL_PREFIX + packageItem.owner.name + "/" + packageItem.name;
 			this.canTint = true;
 			this.canLight = false;
 			this.canOutline = true;
@@ -65,6 +59,8 @@ namespace FairyGUI
 		{
 			if (resizable)
 				this.scale = (float)format.size / size * fontSizeScale;
+			else
+				this.scale = fontSizeScale;
 		}
 
 		override public bool GetGlyphSize(char ch, out float width, out float height)

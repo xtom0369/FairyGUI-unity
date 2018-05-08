@@ -41,6 +41,7 @@ namespace FairyGUI
 		float _lastScale;
 		int[] _touches;
 		bool _started;
+		bool _touchBegan;
 
 		public PinchGesture(GObject host)
 		{
@@ -63,13 +64,36 @@ namespace FairyGUI
 		public void Enable(bool value)
 		{
 			if (value)
-				host.onTouchBegin.Add(__touchBegin);
+			{
+				if (host == GRoot.inst)
+				{
+					Stage.inst.onTouchBegin.Add(__touchBegin);
+					Stage.inst.onTouchMove.Add(__touchMove);
+					Stage.inst.onTouchEnd.Add(__touchEnd);
+				}
+				else
+				{
+					host.onTouchBegin.Add(__touchBegin);
+					host.onTouchMove.Add(__touchMove);
+					host.onTouchEnd.Add(__touchEnd);
+				}
+			}
 			else
 			{
 				_started = false;
-				host.onTouchBegin.Remove(__touchBegin);
-				Stage.inst.onTouchMove.Remove(__touchMove);
-				Stage.inst.onTouchEnd.Remove(__touchEnd);
+				_touchBegan = false;
+				if (host == GRoot.inst)
+				{
+					Stage.inst.onTouchBegin.Remove(__touchBegin);
+					Stage.inst.onTouchMove.Remove(__touchMove);
+					Stage.inst.onTouchEnd.Remove(__touchEnd);
+				}
+				else
+				{
+					host.onTouchBegin.Remove(__touchBegin);
+					host.onTouchMove.Remove(__touchMove);
+					host.onTouchEnd.Remove(__touchEnd);
+				}
 			}
 		}
 
@@ -77,21 +101,24 @@ namespace FairyGUI
 		{
 			if (Stage.inst.touchCount == 2)
 			{
-				if (!_started)
+				if (!_started && !_touchBegan)
 				{
+					_touchBegan = true;
 					Stage.inst.GetAllTouch(_touches);
 					Vector2 pt1 = host.GlobalToLocal(Stage.inst.GetTouchPosition(_touches[0]));
 					Vector2 pt2 = host.GlobalToLocal(Stage.inst.GetTouchPosition(_touches[1]));
 					_startDistance = Vector2.Distance(pt1, pt2);
 
-					Stage.inst.onTouchMove.Add(__touchMove);
-					Stage.inst.onTouchEnd.Add(__touchEnd);
+					context.CaptureTouch();
 				}
 			}
 		}
 
 		void __touchMove(EventContext context)
 		{
+			if (!_touchBegan || Stage.inst.touchCount != 2)
+				return;
+
 			InputEvent evt = context.inputEvent;
 			Vector2 pt1 = host.GlobalToLocal(Stage.inst.GetTouchPosition(_touches[0]));
 			Vector2 pt2 = host.GlobalToLocal(Stage.inst.GetTouchPosition(_touches[1]));
@@ -118,9 +145,7 @@ namespace FairyGUI
 
 		void __touchEnd(EventContext context)
 		{
-			Stage.inst.onTouchMove.Remove(__touchMove);
-			Stage.inst.onTouchEnd.Remove(__touchEnd);
-
+			_touchBegan = false;
 			if (_started)
 			{
 				_started = false;

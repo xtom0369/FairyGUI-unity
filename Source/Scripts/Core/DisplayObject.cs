@@ -71,6 +71,11 @@ namespace FairyGUI
 		/// <summary>
 		/// 
 		/// </summary>
+		public EventListener onTouchMove { get; private set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
 		public EventListener onTouchEnd { get; private set; }
 
 		/// <summary>
@@ -128,6 +133,7 @@ namespace FairyGUI
 		protected int _paintingMode; //1-滤镜，2-blendMode，4-transformMatrix, 8-cacheAsBitmap
 		protected Margin _paintingMargin;
 		protected int _paintingFlag;
+		protected Material _paintingMaterial;
 		protected bool _cacheAsBitmap;
 
 		protected Rect _contentRect;
@@ -158,6 +164,7 @@ namespace FairyGUI
 			onClick = new EventListener(this, "onClick");
 			onRightClick = new EventListener(this, "onRightClick");
 			onTouchBegin = new EventListener(this, "onTouchBegin");
+			onTouchMove = new EventListener(this, "onTouchMove");
 			onTouchEnd = new EventListener(this, "onTouchEnd");
 			onRollOver = new EventListener(this, "onRollOver");
 			onRollOut = new EventListener(this, "onRollOut");
@@ -232,7 +239,9 @@ namespace FairyGUI
 					if (parent != null && _visible)
 					{
 						gameObject.SetActive(true);
-						this.InvalidateBatchingState();
+						InvalidateBatchingState();
+						if (this is Container)
+							((Container)this).InvalidateBatchingState(true);
 					}
 					else
 						gameObject.SetActive(false);
@@ -572,6 +581,10 @@ namespace FairyGUI
 			{
 				_skew = value;
 				_outlineChanged = true;
+
+				if (!Application.isPlaying) //编辑期间不支持！！
+					return;
+
 				UpdateTransformMatrix();
 			}
 		}
@@ -917,7 +930,14 @@ namespace FairyGUI
 					paintingGraphics.enabled = true;
 				paintingGraphics.vertexMatrix = null;
 
-				if (this is Container)
+				if (_paintingMaterial == null)
+				{
+					_paintingMaterial = new Material(ShaderConfig.GetShader(ShaderConfig.imageShader));
+					_paintingMaterial.hideFlags = DisplayOptions.hideFlags;
+				}
+				paintingGraphics.material = _paintingMaterial;
+
+					if (this is Container)
 				{
 					((Container)this).SetChildrenLayer(CaptureCamera.hiddenLayer);
 					((Container)this).UpdateBatchingFlags();
@@ -1331,7 +1351,7 @@ namespace FairyGUI
 							paintingTexture.Dispose(true);
 						if (textureWidth > 0 && textureHeight > 0)
 						{
-							paintingTexture = new NTexture(CaptureCamera.CreateRenderTexture(textureWidth, textureHeight, false));
+							paintingTexture = new NTexture(CaptureCamera.CreateRenderTexture(textureWidth, textureHeight, UIConfig.depthSupportForPaintingMode));
 							Stage.inst.MonitorTexture(paintingTexture);
 						}
 						else
@@ -1339,17 +1359,12 @@ namespace FairyGUI
 						paintingGraphics.texture = paintingTexture;
 					}
 
-					if (paintingGraphics.material == null)
-					{
-						paintingGraphics.material = new Material(ShaderConfig.GetShader(ShaderConfig.imageShader));
-						paintingGraphics.material.hideFlags = DisplayOptions.hideFlags;
-					}
-
 					if (paintingTexture != null)
 					{
-						paintingGraphics.SetOneQuadMesh(
+						paintingGraphics.DrawRect(
 							new Rect(-_paintingMargin.left, -_paintingMargin.top, paintingTexture.width, paintingTexture.height),
 							new Rect(0, 0, 1, 1), Color.white);
+						paintingGraphics.UpdateMesh();
 					}
 					else
 						paintingGraphics.ClearMesh();
@@ -1458,6 +1473,8 @@ namespace FairyGUI
 			{
 				if (paintingGraphics.texture != null)
 					paintingGraphics.texture.Dispose(true);
+				if (_paintingMaterial != null)
+					Material.Destroy(_paintingMaterial);
 
 				paintingGraphics.Dispose();
 				if (paintingGraphics.gameObject != this.gameObject)

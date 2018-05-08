@@ -13,6 +13,11 @@ namespace FairyGUI
 
 		public static bool beingQuit;
 
+		void Start()
+		{
+			useGUILayout = false;
+		}
+
 		void LateUpdate()
 		{
 			Stage.inst.InternalUpdate();
@@ -21,12 +26,10 @@ namespace FairyGUI
 			GraphicsOnStage = Stats.GraphicsCount;
 		}
 
-#if FAIRYGUI_DLL || UNITY_WEBPLAYER || UNITY_WEBGL || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_EDITOR
 		void OnGUI()
 		{
 			Stage.inst.HandleGUIEvents(Event.current);
 		}
-#endif
 
 #if !UNITY_5_4_OR_NEWER
 		void OnLevelWasLoaded()

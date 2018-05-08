@@ -54,6 +54,7 @@ namespace FairyGUI
 		Controller _buttonController;
 		int _downEffect;
 		float _downEffectValue;
+		bool _downScaled;
 
 		bool _down;
 		bool _over;
@@ -353,9 +354,21 @@ namespace FairyGUI
 			else if (_downEffect == 2)
 			{
 				if (val == DOWN || val == SELECTED_OVER || val == SELECTED_DISABLED)
-					SetScale(_downEffectValue, _downEffectValue);
+				{
+					if (!_downScaled)
+					{
+						_downScaled = true;
+						SetScale(this.scaleX * _downEffectValue, this.scaleY * _downEffectValue);
+					}
+				}
 				else
-					SetScale(1, 1);
+				{
+					if (_downScaled)
+					{
+						_downScaled = false;
+						SetScale(this.scaleX / _downEffectValue, this.scaleY / _downEffectValue);
+					}
+				}
 			}
 		}
 
@@ -533,6 +546,9 @@ namespace FairyGUI
 
 		private void __touchBegin(EventContext context)
 		{
+			if (context.inputEvent.button != 0)
+				return;
+
 			_down = true;
 			context.CaptureTouch();
 
@@ -557,9 +573,6 @@ namespace FairyGUI
 		{
 			if (_down)
 			{
-				if (this.displayObject == null || this.displayObject.isDisposed)
-					return;
-
 				_down = false;
 				if (_mode == ButtonMode.Common)
 				{
@@ -593,21 +606,26 @@ namespace FairyGUI
 			if (sound != null)
 				Stage.inst.PlayOneShotSound(sound, soundVolumeScale);
 
-			if (!changeStateOnClick)
-				return;
-
 			if (_mode == ButtonMode.Check)
 			{
-				this.selected = !_selected;
-				onChanged.Call();
+				if (changeStateOnClick)
+				{
+					this.selected = !_selected;
+					onChanged.Call();
+				}
 			}
 			else if (_mode == ButtonMode.Radio)
 			{
-				if (!_selected)
+				if (changeStateOnClick && !_selected)
 				{
 					this.selected = true;
 					onChanged.Call();
 				}
+			}
+			else
+			{
+				if (_relatedController != null)
+					_relatedController.selectedPageId = pageOption.id;
 			}
 		}
 	}
